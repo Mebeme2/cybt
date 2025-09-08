@@ -29,7 +29,6 @@ let reticle;
 let hitTestSource = null;
 let localRefSpace = null;
 let robot = null;
-let bedsPlaced = false;
 
 init();
 start();
@@ -45,14 +44,14 @@ function init() {
   renderer.xr.enabled = true;
   document.body.appendChild(renderer.domElement);
 
-  // Lighting for AR objects
+  // Lights
   const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
   scene.add(hemi);
   const dir = new THREE.DirectionalLight(0xffffff, 0.6);
   dir.position.set(1, 2, 1);
   scene.add(dir);
 
-  // Reticle (ring that sits on detected surfaces)
+  // Reticle
   const ringGeo = new THREE.RingGeometry(0.12, 0.15, 32);
   ringGeo.rotateX(-Math.PI / 2);
   const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
@@ -61,16 +60,13 @@ function init() {
   reticle.visible = false;
   scene.add(reticle);
 
-  // AR button (requests 'hit-test' for plane detection)
+  // AR Button
   document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
 
-  // Session events: set up / clean up hit test source
   renderer.xr.addEventListener('sessionstart', onSessionStart);
   renderer.xr.addEventListener('sessionend', onSessionEnd);
 
   window.addEventListener('resize', onResize);
-
-  // Tap to place robot
   window.addEventListener('click', placeAtReticle);
 }
 
@@ -82,12 +78,8 @@ function onResize() {
 
 async function onSessionStart() {
   const session = renderer.xr.getSession();
-
-  // viewer space for hit test source
   const viewerSpace = await session.requestReferenceSpace('viewer');
   hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
-
-  // local/world reference space for placing objects
   localRefSpace = renderer.xr.getReferenceSpace();
 }
 
@@ -113,18 +105,16 @@ function render(time, frame) {
       reticle.visible = false;
     }
   }
-
   renderer.render(scene, camera);
 }
 
-// Simple robot made from basic geometry (body + screen + 4 yellow wheels)
+// Create simple robot
 function createRobot() {
   const group = new THREE.Group();
 
   const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf8f8f8, roughness: 0.2, metalness: 0.1 });
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.5, 0.25), bodyMat);
   body.position.y = 0.25;
-  body.castShadow = body.receiveShadow = false;
   group.add(body);
 
   const screenMat = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0x112244, emissiveIntensity: 0.4, metalness: 0.8, roughness: 0.3 });
@@ -150,46 +140,18 @@ function createRobot() {
   return group;
 }
 
-// Two simple "beds" near the robot (base + mattress)
-function createBedAt(x, y, z) {
-  const base = new THREE.Mesh(
-    new THREE.BoxGeometry(0.9, 0.12, 0.45),
-    new THREE.MeshStandardMaterial({ color: 0x999999 })
-  );
-  base.position.set(x, y + 0.06, z);
-  scene.add(base);
-
-  const mattress = new THREE.Mesh(
-    new THREE.BoxGeometry(0.9, 0.08, 0.45),
-    new THREE.MeshStandardMaterial({ color: 0xffefef })
-  );
-  mattress.position.set(x, y + 0.16, z);
-  scene.add(mattress);
-}
-
 function placeAtReticle() {
   if (!reticle.visible) return;
 
-  // Create robot once
   if (!robot) {
     robot = createRobot();
     scene.add(robot);
   }
 
-  // Move robot to the reticle pose
   const m = new THREE.Matrix4().copy(reticle.matrix);
   const pos = new THREE.Vector3().setFromMatrixPosition(m);
   robot.position.copy(pos);
-
-  // Drop two beds nearby (only once)
-  if (!bedsPlaced) {
-    const y = pos.y; // same floor height
-    createBedAt(pos.x + 0.8, y, pos.z - 0.9);
-    createBedAt(pos.x - 0.8, y, pos.z - 0.9);
-    bedsPlaced = true;
-  }
 }
 </script>
 </body>
 </html>
-
