@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+/>
 <title>AR Robot Hospital</title>
 <style>
   html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
@@ -26,8 +29,6 @@ let reticle;
 let hitTestSource = null;
 let localRefSpace = null;
 let robot = null;
-let eyeMaterials = [];
-let eyeLights = [];
 
 init();
 start();
@@ -104,27 +105,13 @@ function render(time, frame) {
       reticle.visible = false;
     }
   }
-
-  // Animate eyes glow dynamically
-  if (robot) {
-    const t = Date.now() * 0.002;
-    eyeMaterials.forEach((mat, i) => {
-      mat.emissiveIntensity = 1.5 + 0.5 * Math.sin(t + i);
-      mat.color.setHSL(0.5, 1, 0.5 + 0.2 * Math.sin(t + i));
-    });
-    eyeLights.forEach((light, i) => {
-      light.intensity = 1.5 + 0.5 * Math.sin(t + i);
-    });
-  }
-
   renderer.render(scene, camera);
 }
 
-// Create simple AR robot with blue shiny eyes
+// Create simple robot
 function createRobot() {
   const group = new THREE.Group();
 
-  // Body
   const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf8f8f8, roughness: 0.2, metalness: 0.1 });
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.5, 0.25), bodyMat);
   body.position.y = 0.25;
@@ -135,7 +122,6 @@ function createRobot() {
   screen.position.set(0, 0.37, 0.14);
   group.add(screen);
 
-  // Wheels
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0xffff00, roughness: 0.9, metalness: 0.0 });
   const wheelGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.04, 24);
   const wheelOffsets = [
@@ -150,39 +136,6 @@ function createRobot() {
     w.position.set(x, y, z);
     group.add(w);
   });
-
-  // ----- Blue shiny eyes -----
-  const eyeGeo = new THREE.BoxGeometry(0.06, 1, 0.02);
-  const eyeMat = new THREE.MeshStandardMaterial({
-    color: 0x00ffff,
-    emissive: 0x00ffff,
-    emissiveIntensity: 1.5,
-    metalness: 0.2,
-    roughness: 0.1,
-    transparent: true,
-    opacity: 0.95
-  });
-
-  const leftEye = new THREE.Mesh(eyeGeo, eyeMat.clone());
-  leftEye.position.set(-0.1, 0.42, 0.13);
-  group.add(leftEye);
-  eyeMaterials.push(leftEye.material);
-
-  const rightEye = new THREE.Mesh(eyeGeo, eyeMat.clone());
-  rightEye.position.set(0.1, 0.42, 0.13);
-  group.add(rightEye);
-  eyeMaterials.push(rightEye.material);
-
-  const leftEyeLight = new THREE.PointLight(0x00ffff, 1.5, 0.5);
-  leftEyeLight.position.set(-0.1, 0.42, 0.15);
-  group.add(leftEyeLight);
-  eyeLights.push(leftEyeLight);
-
-  const rightEyeLight = new THREE.PointLight(0x00ffff, 1.5, 0.5);
-  rightEyeLight.position.set(0.1, 0.42, 0.15);
-  group.add(rightEyeLight);
-  eyeLights.push(rightEyeLight);
-  // ---------------------------
 
   return group;
 }
